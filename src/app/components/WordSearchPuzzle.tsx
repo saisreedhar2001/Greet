@@ -66,9 +66,9 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
   }, [foundWords, onComplete]);
 
   useEffect(() => {
-    // Detect if mobile
-    setIsMobile(window.innerWidth < 768);
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    // Detect if mobile based on width or touch capability
+    setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
+    const handleResize = () => setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -105,8 +105,11 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
       // Add cell if it's the first or adjacent to last
       const newSelected = [...selectedCells, cellKey];
       setSelectedCells(newSelected);
-      setCurrentWord(buildWordFromCells(newSelected));
+      const word = buildWordFromCells(newSelected);
+      setCurrentWord(word);
       setLastSelectedCell(cellKey);
+      // automatically evaluate after adding
+      setTimeout(evaluateCurrentWord, 0);
     }
   };
 
@@ -114,6 +117,19 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
     setSelectedCells([]);
     setCurrentWord('');
     setLastSelectedCell(null);
+  };
+
+  // if the currentWord matches any target, mark it found and clear
+  const evaluateCurrentWord = () => {
+    if (!currentWord) return;
+    const reversedWord = currentWord.split('').reverse().join('');
+    const matchedWord = WORDS.find(word => currentWord === word || reversedWord === word);
+    if (matchedWord && !foundWords.has(matchedWord)) {
+      setFoundWords(prev => new Set([...prev, matchedWord]));
+      handleClearSelection();
+      setIsDragging(false);
+      setLastSelectedCell(null);
+    }
   };
 
   const handleSubmitWord = () => {
@@ -134,12 +150,8 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
     setCurrentWord(grid[row][col]);
   };
 
-  // when touch ends, simply stop dragging but do not clear word - mobile will submit manually
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-  };
 
-  // helper for both mouse and touch movements
+  // helper for adding a cell to the selection
   const addCellToSelection = (cellKey: string) => {
     if (!selectedCells.includes(cellKey)) {
       const newSelected = [...selectedCells, cellKey];
@@ -152,23 +164,6 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
     if (isDragging && !isMobile) {
       const key = getCellKey(row, col);
       addCellToSelection(key);
-    }
-  };
-
-  // touch handlers for mobile dragging
-  const handleTouchStart = (row: number, col: number) => {
-    // start selection just like mouse down
-    setIsDragging(true);
-    setSelectedCells([getCellKey(row, col)]);
-    setCurrentWord(grid[row][col]);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    const touch = e.touches[0];
-    const elem = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null;
-    if (elem && elem.dataset && elem.dataset.cellKey) {
-      addCellToSelection(elem.dataset.cellKey);
     }
   };
 
@@ -265,22 +260,17 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
           ))}
         </div>
 
+        {/* show current word (desktop & mobile) */}
+        {currentWord && (
+          <div className="text-center text-[#FFD700] font-serif text-sm mb-2">
+            Word: <span className="font-bold text-lg">{currentWord}</span>
+          </div>
+        )}
         {/* Grid */}
         <div
           className="flex justify-center select-none overflow-auto flex-1 px-2 touch-action-none"
-          onMouseUp={handleEndSelection}
-          onMouseLeave={handleEndSelection}
-          onTouchStart={(e) => {
-            // prevent viewport scroll when starting inside puzzle
-            e.preventDefault();
-          }}
-          onTouchMove={(e) => {
-            e.preventDefault();
-            handleTouchMove(e);
-          }}
-          onTouchEnd={() => {
-            handleTouchEnd();
-          }}
+          onMouseUp={!isMobile ? handleEndSelection : undefined}
+          onMouseLeave={!isMobile ? handleEndSelection : undefined}
         >
           <div className="grid gap-0.5 bg-[#0D0F2B]/60 p-1 sm:p-2 rounded-lg backdrop-blur-sm border border-[#4EC5F1]/30 my-auto">
             {grid.map((row, rowIndex) => (
@@ -295,13 +285,7 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
                        data-cell-key={cellKey}
                        onMouseDown={() => !isMobile && handleStartSelection(rowIndex, colIndex)}
                        onMouseEnter={() => !isMobile && isDragging && handleContinueSelection(rowIndex, colIndex)}
-                       onTouchStart={(e) => {
-                         if (isMobile) {
-                           e.preventDefault();
-                           handleTouchStart(rowIndex, colIndex);
-                         }
-                       }}
-                       onClick={() => isMobile && handleMobileCellTap(rowIndex, colIndex)}
+                       onClick={() => handleMobileCellTap(rowIndex, colIndex)}
                        whileHover={!isMobile ? { scale: 1.1 } : {}}
                        whileTap={!isMobile ? { scale: 0.95 } : {}}
                       className={`
