@@ -65,13 +65,13 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
 
   const getCellKey = (row: number, col: number) => `${row}-${col}`;
 
-  const handleMouseDown = (row: number, col: number) => {
+  const handleStartSelection = (row: number, col: number) => {
     setIsDragging(true);
     setSelectedCells(new Set([getCellKey(row, col)]));
     setCurrentWord(grid[row][col]);
   };
 
-  const handleMouseEnter = (row: number, col: number) => {
+  const handleContinueSelection = (row: number, col: number) => {
     if (isDragging) {
       const key = getCellKey(row, col);
       setSelectedCells(prev => new Set([...prev, key]));
@@ -79,7 +79,7 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
     }
   };
 
-  const handleMouseUp = () => {
+  const handleEndSelection = () => {
     setIsDragging(false);
     
     // Check if current word matches any of the target words
@@ -90,6 +90,26 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
     
     setSelectedCells(new Set());
     setCurrentWord('');
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, row: number, col: number) => {
+    e.preventDefault();
+    handleStartSelection(row, col);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (element && element.dataset.cellKey) {
+      const [row, col] = element.dataset.cellKey.split('-').map(Number);
+      handleContinueSelection(row, col);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+    handleEndSelection();
   };
 
   const handleSpellSubmit = () => {
@@ -172,8 +192,10 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
         {/* Grid */}
         <div
           className="flex justify-center select-none overflow-auto flex-1 px-2"
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onMouseUp={handleEndSelection}
+          onMouseLeave={handleEndSelection}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <div className="grid gap-0.5 bg-[#0D0F2B]/60 p-1 sm:p-2 rounded-lg backdrop-blur-sm border border-[#4EC5F1]/30 my-auto">
             {grid.map((row, rowIndex) => (
@@ -185,14 +207,16 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
                   return (
                     <motion.div
                       key={cellKey}
-                      onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
-                      onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+                      data-cell-key={cellKey}
+                      onMouseDown={() => handleStartSelection(rowIndex, colIndex)}
+                      onMouseEnter={() => handleContinueSelection(rowIndex, colIndex)}
+                      onTouchStart={(e) => handleTouchStart(e, rowIndex, colIndex)}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                       className={`
                         w-4 h-4 sm:w-6 sm:h-6 flex items-center justify-center
                         font-serif text-[0.5rem] sm:text-xs font-semibold cursor-pointer
-                        rounded-sm transition-all duration-200
+                        rounded-sm transition-all duration-200 select-none
                         ${isSelected
                           ? 'bg-gradient-to-br from-[#FFD700] to-[#FFA500] text-[#2E1A47] scale-110 shadow-lg'
                           : 'bg-[#2E1A47]/50 text-[#FFD700] hover:bg-[#2E1A47] border border-[#4EC5F1]/20'
