@@ -54,6 +54,8 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
   const [showHarryHelp, setShowHarryHelp] = useState(false);
   const [spellInput, setSpellInput] = useState('');
   const [spellAttempted, setSpellAttempted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [lastSelectedCell, setLastSelectedCell] = useState<string | null>(null);
 
   useEffect(() => {
     if (foundWords.size === WORDS.length) {
@@ -63,7 +65,66 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
     }
   }, [foundWords, onComplete]);
 
+  useEffect(() => {
+    // Detect if mobile
+    setIsMobile(window.innerWidth < 768);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const getCellKey = (row: number, col: number) => `${row}-${col}`;
+
+  const isAdjacent = (cell1: string, cell2: string): boolean => {
+    const [r1, c1] = cell1.split('-').map(Number);
+    const [r2, c2] = cell2.split('-').map(Number);
+    const rowDiff = Math.abs(r1 - r2);
+    const colDiff = Math.abs(c1 - c2);
+    return rowDiff <= 1 && colDiff <= 1 && !(rowDiff === 0 && colDiff === 0);
+  };
+
+  const handleMobileCellTap = (row: number, col: number) => {
+    const cellKey = getCellKey(row, col);
+    
+    if (selectedCells.has(cellKey)) {
+      // Deselect if already selected
+      const newSelected = new Set(selectedCells);
+      newSelected.delete(cellKey);
+      setSelectedCells(newSelected);
+      
+      const newWord = Array.from(newSelected)
+        .sort((a, b) => {
+          const cells = Array.from(selectedCells);
+          return cells.indexOf(a) - cells.indexOf(b);
+        })
+        .map(key => {
+          const [r, c] = key.split('-').map(Number);
+          return grid[r][c];
+        })
+        .join('');
+      setCurrentWord(newWord);
+      setLastSelectedCell(null);
+    } else if (selectedCells.size === 0 || (lastSelectedCell && isAdjacent(lastSelectedCell, cellKey))) {
+      // Add cell if it's the first or adjacent to last
+      setSelectedCells(prev => new Set([...prev, cellKey]));
+      setCurrentWord(prev => prev + grid[row][col]);
+      setLastSelectedCell(cellKey);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedCells(new Set());
+    setCurrentWord('');
+    setLastSelectedCell(null);
+  };
+
+  const handleSubmitWord = () => {
+    const matchedWord = WORDS.find(word => currentWord.includes(word));
+    if (matchedWord && !foundWords.has(matchedWord)) {
+      setFoundWords(prev => new Set([...prev, matchedWord]));
+    }
+    handleClearSelection();
+  };
 
   const handleStartSelection = (row: number, col: number) => {
     setIsDragging(true);
@@ -208,9 +269,10 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
                     <motion.div
                       key={cellKey}
                       data-cell-key={cellKey}
-                      onMouseDown={() => handleStartSelection(rowIndex, colIndex)}
-                      onMouseEnter={() => handleContinueSelection(rowIndex, colIndex)}
-                      onTouchStart={(e) => handleTouchStart(e, rowIndex, colIndex)}
+                      onMouseDown={() => !isMobile && handleStartSelection(rowIndex, colIndex)}
+                      onMouseEnter={() => !isMobile && handleContinueSelection(rowIndex, colIndex)}
+                      onTouchStart={(e) => isMobile && (e.preventDefault(), handleMobileCellTap(rowIndex, colIndex))}
+                      onClick={() => isMobile && handleMobileCellTap(rowIndex, colIndex)}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                       className={`
@@ -243,6 +305,29 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
             ))}
           </div>
         </div>
+
+        {/* Mobile Controls */}
+        {isMobile && selectedCells.size > 0 && (
+          <div className="px-2 py-2 bg-[#2E1A47]/50 rounded-lg border border-[#4EC5F1]/30 mb-2">
+            <p className="text-xs text-[#FFD700] font-serif mb-2 text-center">Word: <span className="text-lg font-bold">{currentWord}</span></p>
+            <div className="flex gap-2 justify-center">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={handleSubmitWord}
+                className="px-3 py-1 bg-gradient-to-r from-[#4EC5F1] to-[#9D4EDD] text-white rounded-full text-xs font-serif"
+              >
+                Check
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={handleClearSelection}
+                className="px-3 py-1 bg-[#2E1A47]/70 border border-[#FF4DA6] text-[#FF4DA6] rounded-full text-xs font-serif"
+              >
+                Clear
+              </motion.button>
+            </div>
+          </div>
+        )}
 
         {/* Progress */}
         <div className="mt-1 text-center px-2">

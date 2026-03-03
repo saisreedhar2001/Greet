@@ -126,7 +126,7 @@ export function GreatHall({ onNext }: GreatHallProps) {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 2, duration: 1 }}
-        className="relative z-10 text-center max-w-2xl px-8 mb-32"
+        className="relative z-10 text-center max-w-2xl px-4 sm:px-8 mb-24 sm:mb-32"
       >
         <motion.div
           animate={{
@@ -137,11 +137,11 @@ export function GreatHall({ onNext }: GreatHallProps) {
             ],
           }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="font-serif text-5xl text-[#FFD700] mb-6"
+          className="font-serif text-3xl sm:text-5xl text-[#FFD700] mb-4 sm:mb-6"
         >
           The Great Hall Awaits
         </motion.div>
-        <p className="text-2xl text-[#4EC5F1] font-serif italic">
+        <p className="text-lg sm:text-2xl text-[#4EC5F1] font-serif italic">
           Something magical is being prepared...
         </p>
       </motion.div>
@@ -158,7 +158,7 @@ export function GreatHall({ onNext }: GreatHallProps) {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={onNext}
-        className="absolute bottom-8 right-8 z-50 relative px-8 py-4 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#2E1A47] rounded-full font-serif text-lg shadow-lg"
+        className="absolute bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#2E1A47] rounded-full font-serif text-sm sm:text-lg shadow-lg"
       >
         <motion.div
           animate={{
@@ -173,6 +173,6 @@ export function GreatHall({ onNext }: GreatHallProps) {
         />
         <span className="relative z-10">Next ➜</span>
       </motion.button>
-      </motion.div>
-      );
-      }
+    </motion.div>
+  );
+}

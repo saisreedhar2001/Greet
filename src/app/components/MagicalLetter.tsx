@@ -169,7 +169,7 @@ export function MagicalLetter({ onExit }: MagicalLetterProps) {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={onExit}
-        className="fixed bottom-8 right-8 z-50 px-6 py-3 bg-gradient-to-r from-[#FF4DA6] to-[#9D4EDD] text-white rounded-full font-serif text-sm shadow-2xl font-semibold"
+        className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#FF4DA6] to-[#9D4EDD] text-white rounded-full font-serif text-xs sm:text-sm shadow-2xl font-semibold"
       >
         <motion.div
           animate={{

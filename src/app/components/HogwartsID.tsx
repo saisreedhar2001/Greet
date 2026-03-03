@@ -279,7 +279,7 @@ export function HogwartsID({ house, onNext }: HogwartsIDProps) {
       </motion.div>
 
       {/* Buttons - positioned right center with vertical stack */}
-      <div className="absolute right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-4">
+      <div className="absolute right-2 sm:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-2 sm:gap-4 px-2 sm:px-0">
         {/* Birthday Letter Button */}
         <motion.button
           initial={{ opacity: 0, scale: 0.8 }}
@@ -288,7 +288,7 @@ export function HogwartsID({ house, onNext }: HogwartsIDProps) {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onNext}
-          className="px-8 py-3 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#2E1A47] rounded-full font-serif text-sm shadow-lg"
+          className="px-4 sm:px-8 py-2 sm:py-3 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#2E1A47] rounded-full font-serif text-xs sm:text-sm shadow-lg whitespace-nowrap"
         >
           <motion.div
             animate={{
@@ -312,7 +312,7 @@ export function HogwartsID({ house, onNext }: HogwartsIDProps) {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={downloadCard}
-          className="px-8 py-3 bg-gradient-to-r from-[#4EC5F1] to-[#9D4EDD] text-white rounded-full font-serif text-sm shadow-lg"
+          className="px-4 sm:px-8 py-2 sm:py-3 bg-gradient-to-r from-[#4EC5F1] to-[#9D4EDD] text-white rounded-full font-serif text-xs sm:text-sm shadow-lg whitespace-nowrap"
         >
           <motion.div
             animate={{
