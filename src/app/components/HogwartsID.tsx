@@ -24,67 +24,118 @@ export function HogwartsID({ house, onNext }: HogwartsIDProps) {
 
   const downloadCard = () => {
     const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 600;
+    canvas.width = 500;
+    canvas.height = 900;
     const ctx = canvas.getContext('2d');
 
     if (ctx) {
-      // Background with house color top
-      ctx.fillStyle = houseColor;
-      ctx.fillRect(0, 0, 400, 150);
-      ctx.fillStyle = '#f4e4c1';
-      ctx.fillRect(0, 150, 400, 450);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = '/Hogwarts_ID_Akhila_Gryffindor.png';
+      
+      img.onload = () => {
+        // Background with house color top
+        ctx.fillStyle = houseColor;
+        ctx.fillRect(0, 0, 500, 180);
+        ctx.fillStyle = '#f4e4c1';
+        ctx.fillRect(0, 180, 500, 720);
 
-      // School name on colored section
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 16px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('HOGWARTS SCHOOL OF', 200, 40);
-      ctx.fillText('WITCHCRAFT & WIZARDRY', 200, 65);
+        // School name on colored section
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 24px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('HOGWARTS SCHOOL OF', 250, 50);
+        ctx.fillText('WITCHCRAFT & WIZARDRY', 250, 85);
 
-      // Student info section
-      ctx.fillStyle = '#2E1A47';
-      ctx.font = 'bold 14px serif';
-      ctx.fillText('STUDENT ID CARD', 200, 120);
+        // Student ID Card label
+        ctx.fillStyle = '#2E1A47';
+        ctx.font = 'bold 16px serif';
+        ctx.fillText('STUDENT ID CARD', 250, 145);
 
-      // Name
-      ctx.font = 'bold 28px serif';
-      ctx.fillStyle = houseColor;
-      ctx.fillText('AKHILA', 200, 240);
+        // Circular photo - much larger with padding
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(250, 290, 85, 0, Math.PI * 2);
+        ctx.fillStyle = houseColor;
+        ctx.fill();
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = houseColor;
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(250, 290, 82, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(img, 168, 208, 164, 164);
+        ctx.restore();
 
-      // House
-      ctx.font = 'bold 18px serif';
-      ctx.fillStyle = houseColor;
-      ctx.fillText('House: ' + (house || 'Unknown'), 200, 290);
+        // Name - with padding
+        ctx.font = 'bold 40px serif';
+        ctx.fillStyle = houseColor;
+        ctx.textAlign = 'center';
+        ctx.fillText('AKHILA', 250, 430);
 
-      // House emblem circle
-      ctx.fillStyle = houseColor + '20';
-      ctx.beginPath();
-      ctx.arc(80, 360, 40, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = houseColor;
-      ctx.lineWidth = 2;
-      ctx.stroke();
+        // House - with padding
+        ctx.font = '16px serif';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('House: ' + (house || 'Unknown'), 250, 470);
 
-      // Details on right
-      ctx.font = '12px serif';
-      ctx.fillStyle = '#2E1A47';
-      ctx.textAlign = 'left';
-      ctx.fillText('Title: The Birthday Queen', 150, 360);
-      ctx.fillText('Power: More Magical', 150, 390);
-      ctx.fillText('Auth: Headmaster Dumbledore', 150, 420);
+        // Top divider line
+        ctx.strokeStyle = houseColor;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(40, 495);
+        ctx.lineTo(460, 495);
+        ctx.stroke();
 
-      // ID Number at bottom
-      ctx.font = '11px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#666';
-      ctx.fillText('ID: HGW-2024-AKHILA', 200, 550);
+        // Details section - centered with line spacing
+        ctx.font = '14px serif';
+        ctx.fillStyle = '#2E1A47';
+        ctx.textAlign = 'center';
+        
+        // Add background for details section
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.05)';
+        ctx.fillRect(40, 510, 420, 115);
+        
+        ctx.fillStyle = '#2E1A47';
+        ctx.fillText('Title: The Birthday Queen of Hogwarts', 250, 540);
+        ctx.fillText('Special Power: More Magical & Prettier', 250, 575);
+        ctx.fillText('Authorized By: Headmaster Dumbledore', 250, 610);
 
-      // Download
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = `Hogwarts_ID_Akhila_${house || 'Unassigned'}.png`;
-      link.click();
+        // Bottom divider
+        ctx.strokeStyle = houseColor;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(40, 635);
+        ctx.lineTo(460, 635);
+        ctx.stroke();
+
+        // ID Number at bottom - with padding
+        ctx.font = '13px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#666';
+        ctx.fillText('ID: HGW-2024-AKHILA', 250, 680);
+
+        // Star decoration
+        ctx.font = 'bold 36px serif';
+        ctx.fillStyle = houseColor;
+        ctx.textAlign = 'center';
+        ctx.fillText('⭐', 250, 750);
+        
+        // Bottom decoration line
+        ctx.strokeStyle = houseColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(125, 790);
+        ctx.lineTo(375, 790);
+        ctx.stroke();
+
+        // Download
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `Hogwarts_ID_Akhila_${house || 'Unassigned'}.png`;
+        link.click();
+      };
     }
   };
 
