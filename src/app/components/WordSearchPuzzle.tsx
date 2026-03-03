@@ -117,16 +117,14 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
   };
 
   const handleSubmitWord = () => {
-    console.log('Submit word - currentWord:', currentWord, 'selectedCells:', selectedCells);
     const reversedWord = currentWord.split('').reverse().join('');
     const matchedWord = WORDS.find(word => currentWord === word || reversedWord === word);
-    console.log('Reversed:', reversedWord, 'Matched:', matchedWord, 'Available words:', WORDS);
     if (matchedWord && !foundWords.has(matchedWord)) {
-      console.log('Found word!', matchedWord);
       setFoundWords(prev => new Set([...prev, matchedWord]));
-    } else {
-      console.log('No match found');
     }
+    // reset drag state too
+    setIsDragging(false);
+    setLastSelectedCell(null);
     handleClearSelection();
   };
 
@@ -136,24 +134,51 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
     setCurrentWord(grid[row][col]);
   };
 
-  const handleContinueSelection = (row: number, col: number) => {
-    if (isDragging) {
-      const key = getCellKey(row, col);
-      const newSelected = [...selectedCells, key];
+  // when touch ends, simply stop dragging but do not clear word - mobile will submit manually
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  // helper for both mouse and touch movements
+  const addCellToSelection = (cellKey: string) => {
+    if (!selectedCells.includes(cellKey)) {
+      const newSelected = [...selectedCells, cellKey];
       setSelectedCells(newSelected);
       setCurrentWord(buildWordFromCells(newSelected));
+    }
+  };
+
+  const handleContinueSelection = (row: number, col: number) => {
+    if (isDragging && !isMobile) {
+      const key = getCellKey(row, col);
+      addCellToSelection(key);
+    }
+  };
+
+  // touch handlers for mobile dragging
+  const handleTouchStart = (row: number, col: number) => {
+    // start selection just like mouse down
+    setIsDragging(true);
+    setSelectedCells([getCellKey(row, col)]);
+    setCurrentWord(grid[row][col]);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    const elem = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null;
+    if (elem && elem.dataset && elem.dataset.cellKey) {
+      addCellToSelection(elem.dataset.cellKey);
     }
   };
 
   const handleEndSelection = () => {
     setIsDragging(false);
     
-    // Check if current word matches any of the target words
+    // on desktop release we immediately evaluate the word, then clear
     const reversedWord = currentWord.split('').reverse().join('');
     const matchedWord = WORDS.find(word => currentWord === word || reversedWord === word);
-    console.log('Desktop - currentWord:', currentWord, 'reversed:', reversedWord, 'matched:', matchedWord);
     if (matchedWord && !foundWords.has(matchedWord)) {
-      console.log('Desktop: Found word!', matchedWord);
       setFoundWords(prev => new Set([...prev, matchedWord]));
     }
     
@@ -242,9 +267,20 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
 
         {/* Grid */}
         <div
-          className="flex justify-center select-none overflow-auto flex-1 px-2"
+          className="flex justify-center select-none overflow-auto flex-1 px-2 touch-action-none"
           onMouseUp={handleEndSelection}
           onMouseLeave={handleEndSelection}
+          onTouchStart={(e) => {
+            // prevent viewport scroll when starting inside puzzle
+            e.preventDefault();
+          }}
+          onTouchMove={(e) => {
+            e.preventDefault();
+            handleTouchMove(e);
+          }}
+          onTouchEnd={() => {
+            handleTouchEnd();
+          }}
         >
           <div className="grid gap-0.5 bg-[#0D0F2B]/60 p-1 sm:p-2 rounded-lg backdrop-blur-sm border border-[#4EC5F1]/30 my-auto">
             {grid.map((row, rowIndex) => (
@@ -258,15 +294,20 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
                        key={cellKey}
                        data-cell-key={cellKey}
                        onMouseDown={() => !isMobile && handleStartSelection(rowIndex, colIndex)}
-                       onMouseEnter={() => !isMobile && handleContinueSelection(rowIndex, colIndex)}
+                       onMouseEnter={() => !isMobile && isDragging && handleContinueSelection(rowIndex, colIndex)}
+                       onTouchStart={(e) => {
+                         if (isMobile) {
+                           e.preventDefault();
+                           handleTouchStart(rowIndex, colIndex);
+                         }
+                       }}
                        onClick={() => isMobile && handleMobileCellTap(rowIndex, colIndex)}
-                       onTouchStart={() => isMobile && handleMobileCellTap(rowIndex, colIndex)}
                        whileHover={!isMobile ? { scale: 1.1 } : {}}
                        whileTap={!isMobile ? { scale: 0.95 } : {}}
                       className={`
                         w-4 h-4 sm:w-6 sm:h-6 flex items-center justify-center
                         font-serif text-[0.5rem] sm:text-xs font-semibold cursor-pointer
-                        rounded-sm transition-all duration-200 select-none
+                        rounded-sm transition-all duration-200 select-none touch-action-none
                         ${isSelected
                           ? 'bg-gradient-to-br from-[#FFD700] to-[#FFA500] text-[#2E1A47] scale-110 shadow-lg'
                           : 'bg-[#2E1A47]/50 text-[#FFD700] hover:bg-[#2E1A47] border border-[#4EC5F1]/20'
