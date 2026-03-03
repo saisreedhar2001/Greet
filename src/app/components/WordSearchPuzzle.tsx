@@ -48,7 +48,7 @@ const createGrid = () => {
 export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
   const [grid] = useState(createGrid());
   const [foundWords, setFoundWords] = useState<Set<string>>(new Set());
-  const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
+  const [selectedCells, setSelectedCells] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [currentWord, setCurrentWord] = useState('');
   const [showHarryHelp, setShowHarryHelp] = useState(false);
@@ -75,6 +75,15 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
 
   const getCellKey = (row: number, col: number) => `${row}-${col}`;
 
+  const buildWordFromCells = (cells: string[]): string => {
+    return cells
+      .map(key => {
+        const [r, c] = key.split('-').map(Number);
+        return grid[r][c];
+      })
+      .join('');
+  };
+
   const isAdjacent = (cell1: string, cell2: string): boolean => {
     const [r1, c1] = cell1.split('-').map(Number);
     const [r2, c2] = cell2.split('-').map(Number);
@@ -86,57 +95,53 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
   const handleMobileCellTap = (row: number, col: number) => {
     const cellKey = getCellKey(row, col);
     
-    if (selectedCells.has(cellKey)) {
+    if (selectedCells.includes(cellKey)) {
       // Deselect if already selected
-      const newSelected = new Set(selectedCells);
-      newSelected.delete(cellKey);
+      const newSelected = selectedCells.filter(cell => cell !== cellKey);
       setSelectedCells(newSelected);
-      
-      const newWord = Array.from(newSelected)
-        .sort((a, b) => {
-          const cells = Array.from(selectedCells);
-          return cells.indexOf(a) - cells.indexOf(b);
-        })
-        .map(key => {
-          const [r, c] = key.split('-').map(Number);
-          return grid[r][c];
-        })
-        .join('');
-      setCurrentWord(newWord);
-      setLastSelectedCell(null);
-    } else if (selectedCells.size === 0 || (lastSelectedCell && isAdjacent(lastSelectedCell, cellKey))) {
+      setCurrentWord(buildWordFromCells(newSelected));
+      setLastSelectedCell(newSelected.length > 0 ? newSelected[newSelected.length - 1] : null);
+    } else if (selectedCells.length === 0 || (lastSelectedCell && isAdjacent(lastSelectedCell, cellKey))) {
       // Add cell if it's the first or adjacent to last
-      setSelectedCells(prev => new Set([...prev, cellKey]));
-      setCurrentWord(prev => prev + grid[row][col]);
+      const newSelected = [...selectedCells, cellKey];
+      setSelectedCells(newSelected);
+      setCurrentWord(buildWordFromCells(newSelected));
       setLastSelectedCell(cellKey);
     }
   };
 
   const handleClearSelection = () => {
-    setSelectedCells(new Set());
+    setSelectedCells([]);
     setCurrentWord('');
     setLastSelectedCell(null);
   };
 
   const handleSubmitWord = () => {
-    const matchedWord = WORDS.find(word => currentWord.includes(word));
+    console.log('Submit word - currentWord:', currentWord, 'selectedCells:', selectedCells);
+    const reversedWord = currentWord.split('').reverse().join('');
+    const matchedWord = WORDS.find(word => currentWord === word || reversedWord === word);
+    console.log('Reversed:', reversedWord, 'Matched:', matchedWord, 'Available words:', WORDS);
     if (matchedWord && !foundWords.has(matchedWord)) {
+      console.log('Found word!', matchedWord);
       setFoundWords(prev => new Set([...prev, matchedWord]));
+    } else {
+      console.log('No match found');
     }
     handleClearSelection();
   };
 
   const handleStartSelection = (row: number, col: number) => {
     setIsDragging(true);
-    setSelectedCells(new Set([getCellKey(row, col)]));
+    setSelectedCells([getCellKey(row, col)]);
     setCurrentWord(grid[row][col]);
   };
 
   const handleContinueSelection = (row: number, col: number) => {
     if (isDragging) {
       const key = getCellKey(row, col);
-      setSelectedCells(prev => new Set([...prev, key]));
-      setCurrentWord(prev => prev + grid[row][col]);
+      const newSelected = [...selectedCells, key];
+      setSelectedCells(newSelected);
+      setCurrentWord(buildWordFromCells(newSelected));
     }
   };
 
@@ -144,34 +149,19 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
     setIsDragging(false);
     
     // Check if current word matches any of the target words
-    const matchedWord = WORDS.find(word => currentWord.includes(word));
+    const reversedWord = currentWord.split('').reverse().join('');
+    const matchedWord = WORDS.find(word => currentWord === word || reversedWord === word);
+    console.log('Desktop - currentWord:', currentWord, 'reversed:', reversedWord, 'matched:', matchedWord);
     if (matchedWord && !foundWords.has(matchedWord)) {
+      console.log('Desktop: Found word!', matchedWord);
       setFoundWords(prev => new Set([...prev, matchedWord]));
     }
     
-    setSelectedCells(new Set());
+    setSelectedCells([]);
     setCurrentWord('');
   };
 
-  const handleTouchStart = (e: React.TouchEvent, row: number, col: number) => {
-    e.preventDefault();
-    handleStartSelection(row, col);
-  };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (element && element.dataset.cellKey) {
-      const [row, col] = element.dataset.cellKey.split('-').map(Number);
-      handleContinueSelection(row, col);
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.preventDefault();
-    handleEndSelection();
-  };
 
   const handleSpellSubmit = () => {
     if (spellInput.toUpperCase().trim() === 'AKHILA BEAUTIFICA SUPREMA!') {
@@ -255,26 +245,24 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
           className="flex justify-center select-none overflow-auto flex-1 px-2"
           onMouseUp={handleEndSelection}
           onMouseLeave={handleEndSelection}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
         >
           <div className="grid gap-0.5 bg-[#0D0F2B]/60 p-1 sm:p-2 rounded-lg backdrop-blur-sm border border-[#4EC5F1]/30 my-auto">
             {grid.map((row, rowIndex) => (
               <div key={rowIndex} className="flex gap-0.5">
                 {row.map((letter, colIndex) => {
-                  const cellKey = getCellKey(rowIndex, colIndex);
-                  const isSelected = selectedCells.has(cellKey);
+                   const cellKey = getCellKey(rowIndex, colIndex);
+                   const isSelected = selectedCells.includes(cellKey);
                   
                   return (
                     <motion.div
-                      key={cellKey}
-                      data-cell-key={cellKey}
-                      onMouseDown={() => !isMobile && handleStartSelection(rowIndex, colIndex)}
-                      onMouseEnter={() => !isMobile && handleContinueSelection(rowIndex, colIndex)}
-                      onTouchStart={(e) => isMobile && (e.preventDefault(), handleMobileCellTap(rowIndex, colIndex))}
-                      onClick={() => isMobile && handleMobileCellTap(rowIndex, colIndex)}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
+                       key={cellKey}
+                       data-cell-key={cellKey}
+                       onMouseDown={() => !isMobile && handleStartSelection(rowIndex, colIndex)}
+                       onMouseEnter={() => !isMobile && handleContinueSelection(rowIndex, colIndex)}
+                       onClick={() => isMobile && handleMobileCellTap(rowIndex, colIndex)}
+                       onTouchStart={() => isMobile && handleMobileCellTap(rowIndex, colIndex)}
+                       whileHover={!isMobile ? { scale: 1.1 } : {}}
+                       whileTap={!isMobile ? { scale: 0.95 } : {}}
                       className={`
                         w-4 h-4 sm:w-6 sm:h-6 flex items-center justify-center
                         font-serif text-[0.5rem] sm:text-xs font-semibold cursor-pointer
@@ -307,7 +295,7 @@ export function WordSearchPuzzle({ onComplete }: WordSearchPuzzleProps) {
         </div>
 
         {/* Mobile Controls */}
-        {isMobile && selectedCells.size > 0 && (
+        {isMobile && selectedCells.length > 0 && (
           <div className="px-2 py-2 bg-[#2E1A47]/50 rounded-lg border border-[#4EC5F1]/30 mb-2">
             <p className="text-xs text-[#FFD700] font-serif mb-2 text-center">Word: <span className="text-lg font-bold">{currentWord}</span></p>
             <div className="flex gap-2 justify-center">
